@@ -25,6 +25,22 @@ data class Note(
     var deleted: Boolean = false
 )
 
+data class Chat(
+    val id: Int,
+    val userId: Int
+) {
+    var unreadCount: Int = 0
+}
+
+class Message(
+    val id: Int,
+    val chatId: Int,
+    val userId: Int,
+    val text: String
+) {
+    var isRead: Boolean = false
+}
+
 class NoteNotFoundException(message: String) : Exception(message)
 class PostNotFoundException(message: String) : Exception(message)
 
@@ -247,5 +263,81 @@ object NoteService {
         notes = emptyArray()
         nextId = 1
     }
-
 }
+
+class ChatService {
+
+    private val chats = mutableListOf<Chat>()
+    private val messages = mutableListOf<Message>()
+
+    fun createChat(userId: Int): Chat {
+        val chat = Chat(chats.size + 1, userId)
+        chats.add(chat)
+        return chat
+    }
+
+    fun deleteChat(chatId: Int)
+    {
+        val chat = chats.find { it.id == chatId }
+            ?: throw IllegalArgumentException("Чат с таким Id $chatId не найден")
+        chats.remove(chat)
+    }
+
+    fun getChats(): List<Chat> {
+        return chats.toList()
+    }
+
+    fun getUnreadChatsCount(userId: Int): Int {
+        return chats.count { it.userId == userId && it.unreadCount > 0 }
+    }
+
+    fun getLatestMessages(userId: Int): List<String> {
+        val userChats = chats.filter { it.userId == userId }
+        val latestMessages = mutableListOf<String>()
+        for (chat in userChats) {
+            val message = messages.lastOrNull { it.chatId == chat.id }
+            if (message != null) {
+                latestMessages.add("Пользователь ${message.userId}: ${message.text}")
+            } else {
+                latestMessages.add("Нет сообщений")
+            }
+        }
+        return latestMessages
+    }
+
+    fun getMessagesFromChat(chatId: Int, userId: Int, count: Int): List<Message> {
+        val chatMessages = messages.filter { it.chatId == chatId }
+        val unreadMessages = chatMessages.filter { it.userId != userId }
+        val messagesToRead = if (unreadMessages.size > count) count else unreadMessages.size
+        val resultMessages = unreadMessages.take(messagesToRead)
+        resultMessages.forEach { it.isRead = true }
+        return resultMessages
+    }
+
+    fun createMessage(chatId: Int, userId: Int, text: String): Message {
+        val message = Message(messages.size + 1, chatId, userId, text)
+        messages.add(message)
+        val chat = chats.find { it.id == chatId }
+        if (chat != null) {
+            chat.unreadCount += 1
+        }
+        return message
+    }
+
+    fun deleteMessage(messageId: Int) {
+        val message = messages.find { it.id == messageId }
+            ?: throw IllegalArgumentException("Сообщение с таким Id $messageId не найдено")
+        val chat = chats.find { it.id == message.chatId }
+        if (chat != null) {
+            chat.unreadCount -= 1
+        }
+        messages.remove(message)
+    }
+
+    fun markAllMessagesAsRead(chatId: Int) {
+        val chat = chats.find { it.id == chatId }
+            ?: throw IllegalArgumentException("Чат с таки Id $chatId не найден")
+        chat.unreadCount = 0
+    }
+}
+
