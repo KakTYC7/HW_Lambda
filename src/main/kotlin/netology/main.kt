@@ -306,21 +306,16 @@ class ChatService {
     }
 
     fun getMessagesFromChat(chatId: Int, userId: Int, count: Int): List<Message> {
-        val chatMessages = messages.filter { it.chatId == chatId }
-        val unreadMessages = chatMessages.filter { it.userId != userId }
-        val messagesToRead = if (unreadMessages.size > count) count else unreadMessages.size
-        val resultMessages = unreadMessages.take(messagesToRead)
-        resultMessages.forEach { it.isRead = true }
-        return resultMessages
+        return messages.filter { it.chatId == chatId && it.userId != userId }
+            .take(count)
+            .onEach { it.isRead = true }
     }
 
     fun createMessage(chatId: Int, userId: Int, text: String): Message {
+        val chat = chats.find { it.id == chatId } ?: createChat(userId)
         val message = Message(messages.size + 1, chatId, userId, text)
         messages.add(message)
-        val chat = chats.find { it.id == chatId }
-        if (chat != null) {
-            chat.unreadCount += 1
-        }
+        chat.unreadCount++
         return message
     }
 
@@ -329,8 +324,9 @@ class ChatService {
             ?: throw IllegalArgumentException("Сообщение с таким Id $messageId не найдено")
         val chat = chats.find { it.id == message.chatId }
         if (chat != null) {
-            chat.unreadCount -= 1
+            chat.unreadCount = chat.unreadCount.dec()
         }
+
         messages.remove(message)
     }
 

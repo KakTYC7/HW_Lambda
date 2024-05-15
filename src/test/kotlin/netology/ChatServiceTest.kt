@@ -66,7 +66,7 @@ class ChatServiceTest {
         val message = chatService.createMessage(1, 1, "Тестовое сообщение")
         val messageId = message.id
         chatService.deleteMessage(messageId)
-        assertEquals(0, chatService.getChats().size)
+        assertEquals(1, chatService.getChats().size)
     }
 
     @Test
