@@ -321,6 +321,7 @@ class ChatService {
         if (chat != null) {
             chat.unreadCount = chat.unreadCount.dec()
         }
+
         messages.remove(message)
     }
 
