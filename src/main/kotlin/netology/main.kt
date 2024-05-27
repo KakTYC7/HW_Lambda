@@ -292,18 +292,23 @@ class ChatService {
     }
 
     fun getLatestMessages(userId: Int): List<String> {
-        return chats.filter { it.userId == userId }
-            .mapNotNull { chat ->
-                messages.lastOrNull { it.chatId == chat.id }?.let { "Пользователь ${it.userId}: ${it.text}" }
+        val userChats = chats.filter { it.userId == userId }
+        val latestMessages = mutableListOf<String>()
+        for (chat in userChats) {
+            val message = messages.lastOrNull { it.chatId == chat.id }
+            if (message != null) {
+                latestMessages.add("Пользователь ${message.userId}: ${message.text}")
+            } else {
+                latestMessages.add("Нет сообщений")
             }
+        }
+        return latestMessages
     }
 
     fun getMessagesFromChat(chatId: Int, userId: Int, count: Int): List<Message> {
-        return messages.asSequence()
-            .filter { it.chatId == chatId && it.userId != userId }
+        return messages.filter { it.chatId == chatId && it.userId != userId }
             .take(count)
             .onEach { it.isRead = true }
-            .toList()
     }
 
     fun createMessage(chatId: Int, userId: Int, text: String): Message {
@@ -321,6 +326,7 @@ class ChatService {
         if (chat != null) {
             chat.unreadCount = chat.unreadCount.dec()
         }
+
         messages.remove(message)
     }
 
